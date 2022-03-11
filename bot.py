@@ -101,111 +101,63 @@ def site(update: Update, context: CallbackContext) -> None:
     options.add_argument("headless")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    for page in range(1,PAGES_TO_FIND+1):
-        driver = webdriver.Chrome(options=options)
-        driver.get(url)
-        time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        driver.quit()
+    start = time.time()
+    #!!!input this line to main and quit webdriver with bot only
+    driver = webdriver.Chrome(options=options)
+    print("1")
+    print(time.time() - start)
+    start = time.time()
 
+    for page in range(1,PAGES_TO_FIND+1):
+
+        print(f"page #{page} is loading")
+        start = time.time()
+
+        
+       
+
+        driver.get(url + f'&page={page}')
+        print("2")
+        print(time.time() - start)
+        start = time.time()
+
+        time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
+        print("3")
+        print(time.time() - start)
+        start = time.time()
+
+        soup = BeautifulSoup(driver.page_source, PARSER)
+        print("4")
+        print(time.time() - start)
+        start = time.time()
+
+        print(f"page #{page} serch")
+        print(time.time() - start)
 
         for item in soup.find_all("div", {"class": FIND_CLASS}):
+            if item == None:
+                if page == 1:
+                    update.message.reply_text(f'По запросу не найдено товаров')
+                    driver.quit()
+                    return
+                else: 
+                    update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*(PAGES_TO_FIND-1)} ')
+                    driver.quit()
+                    return
             link = item.a.get('href')
             if ozon_code in link:
                 is_found = 1
                 break
             counter += 1
 
-        if is_found:
-            update.message.reply_text(f"Позиция в поиске: {counter}\n Номер страницы с товаром: {page}")
+        if is_found == 1:
+            update.message.reply_text(f"Позиция в поиске: {counter}\nНомер страницы с товаром: {page}")
             break
 
+    if is_found != 1:
+        update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*PAGES_TO_FIND} ')
 
-
-    
-
-
-
-
-
-'''
-    print("###############################################################")
-    #иногда классы меняются к хуям(не надежный способ поиска адреса)
-    item = soup.find("div", {"class": FIND_CLASS})
-    link = item.a.get('href')
-    print(link)
-    print("###############################################################")
-'''
-'''
-
-    ozon_code = context.args[0]
-    global_counter = 1
-    on_page_counter = 1
-    pageNum = 1
-
-
-    while  global_counter != 10001:
-
-        if ozon_code in link:
-            break
-
-        if on_page_counter == 36:
-            print("###############################################################")
-            print('check page counter')
-            pageNum += 1
-            newPageUrl = ulr + f"&from_global=true&page={pageNum}"
-
-
-            r = requests.get(newPageUrl, headers=headers)
-            soup = BeautifulSoup(r.text, PARSER)
-
-
-            item = soup.findNext("div", {"class": FIND_CLASS})
-            link = item.a.get('href')
-            print(link)
-            print("###############################################################")
-            on_page_counter = 1
-        else:
-            print("###############################################################")
-            print('check regular counter')
-            item = item.findNext("div", {"class": FIND_CLASS})
-            link = item.a.get('href')
-            print(link)
-            print("###############################################################")
-            on_page_counter += 1
-
-        global_counter += 1
-
-
-    if global_counter == 10001:
-        update.message.reply_text('Not in fisrt 10000')
-    else:
-        update.message.reply_text(f"Позиция в поиске: {global_counter}")
-'''
-'''
-    while (ozon_code not in link) and (global_counter != 37):
-
-
-        print("###############################################################")
-        item = item.findNext("div", {"class": FIND_CLASS})
-        link = item.a.get('href')
-        print(link)
-        print("###############################################################")
-
-
-        global_counter += 1
-        continue
-
-
-
-
-    if global_counter == 37:
-        update.message.reply_text('Not in fisrt 36')
-    else:
-        update.message.reply_text(f"Позиция в поиске: {global_counter}")
- '''
-
-
+    driver.quit()
 
 
 
