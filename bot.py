@@ -1,7 +1,6 @@
 #add exceptions for no search results
 #add exceptions for incorrect ozon code
 
-#token = "1655217772:AAEEg8VIjNrU_t2678URbPODYzA132YTEI4"
 
 import numpy as np
 
