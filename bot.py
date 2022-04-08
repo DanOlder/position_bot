@@ -1,8 +1,6 @@
 #add exceptions for no search results
 #add exceptions for incorrect ozon code
 
-#token = "1655217772:AAEEg8VIjNrU_t2678URbPODYzA132YTEI4"
-
 import numpy as np
 
 import logging, requests
@@ -69,8 +67,9 @@ def site(update: Update, context: CallbackContext) -> None:
 
 
 
-    FIND_CLASS = 'hy5 y5h'
-    # parser lutshe pomenyat' !!!
+    #FIND_CLASS = 'hy5 y5h'
+    FIND_CLASS = 'n2i ni3'
+    
     PARSER = 'lxml'
     SLEEP_TIME_FOR_LOAD = 0.5
     PAGES_TO_FIND = 10
@@ -131,8 +130,14 @@ def site(update: Update, context: CallbackContext) -> None:
         print(time.time() - start)
         start = time.time()
 
-        print(f"page #{page} serch")
+        print(f"page #{page} search")
         print(time.time() - start)
+
+        #################check the html file##################   
+        #f = open("ozon html.txt", "w", encoding="utf-8")
+        #f.write(soup.prettify())
+        #f.close()   
+        ######################################################
 
         for item in soup.find_all("div", {"class": FIND_CLASS}):
             if item == None:
@@ -145,6 +150,8 @@ def site(update: Update, context: CallbackContext) -> None:
                     driver.quit()
                     return
             link = item.a.get('href')
+            #print(ozon_code)
+            #print(link)
             if ozon_code in link:
                 is_found = 1
                 break
@@ -168,7 +175,7 @@ def unknown(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater(token='1655217772:AAEEg8VIjNrU_t2678URbPODYzA132YTEI4', use_context = True)
+    updater = Updater(token='', use_context = True)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
