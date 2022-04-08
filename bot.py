@@ -5,6 +5,7 @@ import numpy as np
 
 import logging, requests
 import time
+from threading import Thread
 
 from selenium import webdriver
 from bs4 import BeautifulSoup
@@ -18,6 +19,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
+#      CONSTANTS
+FIND_CLASS = str()
+PARSER = 'lxml'
+SLEEP_TIME_FOR_LOAD = 0.5
+PAGES_TO_FIND = 10
+#######################
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
@@ -58,7 +66,42 @@ def get_random_ua():
         print('Exception in random_ua')
         print(str(ex))
     finally:
-        return random_ua    
+        return random_ua
+
+def scan_page(update, driver, page, url, ozon_code):
+
+    ##################INI#######################
+    print(f"page #{page} is loading")
+
+    driver.get(url + f'&page={page}')
+    time.sleep(SLEEP_TIME_FOR_LOAD)  # wait for html to be fully loaded
+
+    soup = BeautifulSoup(driver.page_source, PARSER)
+
+    print(f"page #{page} search")
+    ############################################
+
+    counter = 1
+    is_found = 0
+
+    for item in soup.find_all("div", {"class": FIND_CLASS}):
+        if item is None:
+            update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36 * (page - 1)} ')
+            driver.quit()
+            return True
+
+        #print(item.a.get('href'))
+        link = item.a.get('href')
+
+        if ozon_code in link:
+            is_found = 1
+            break
+        counter += 1
+
+    if is_found == 1:
+        update.message.reply_text(f"Позиция в поиске: {(page-1)*36+counter}\nНомер страницы с товаром: {page}")
+        return True
+    return False
 
 def site(update: Update, context: CallbackContext) -> None:
 
@@ -66,16 +109,6 @@ def site(update: Update, context: CallbackContext) -> None:
     if arg_num<2:
         update.message.reply_text('Not enough args')
         return
-
-
-
-    #FIND_CLASS = 'hy5 y5h'
-    FIND_CLASS = 'n2i ni3'
-
-    PARSER = 'lxml'
-    SLEEP_TIME_FOR_LOAD = 0.5
-    PAGES_TO_FIND = 10
-
 
 
     # make with requests for changing pages
@@ -93,8 +126,7 @@ def site(update: Update, context: CallbackContext) -> None:
 
 
     ozon_code = context.args[0]
-    counter = 1
-    is_found = 0
+
 
 
 
@@ -109,70 +141,80 @@ def site(update: Update, context: CallbackContext) -> None:
     print(time.time() - start)
     start = time.time()
 
-    for page in range(1,PAGES_TO_FIND+1):
-
-        print(f"page #{page} is loading")
-        start = time.time()
-
-        
-        driver.get(url + f'&page={page}')
-        print("2")
-        print(time.time() - start)
-        start = time.time()
-
-        time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
-        print("3")
-        print(time.time() - start)
-        start = time.time()
-
-        soup = BeautifulSoup(driver.page_source, PARSER)
-        print("4")
-        print(time.time() - start)
-        start = time.time()
-
-        print(f"page #{page} search")
-        print(time.time() - start)
-
-        #################check the html file##################   
-        #f = open("ozon html.txt", "w", encoding="utf-8")
-        #f.write(soup.prettify())
-        #f.close()   
-        ######################################################
-
-
-        ###################find class name####################
-        if page == 1:
-            class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
-            FIND_CLASS = ' '.join(class_massive)
-            #print(FIND_CLASS)
-        ######################################################
 
 
 
-        for item in soup.find_all("div", {"class": FIND_CLASS}):
-            if item == None:
-                if page == 1:
-                    update.message.reply_text(f'По запросу не найдено товаров')
-                    driver.quit()
-                    return
-                else: 
-                    update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*(PAGES_TO_FIND-1)} ')
-                    driver.quit()
-                    return
-            link = item.a.get('href')
-            #print(ozon_code)
-            #print(link)
-            if ozon_code in link:
-                is_found = 1
-                break
-            counter += 1
 
-        if is_found == 1:
-            update.message.reply_text(f"Позиция в поиске: {counter}\nНомер страницы с товаром: {page}")
+
+
+
+
+    page = 1
+
+
+    print(f"page #{page} is loading")
+    start = time.time()
+
+    driver.get(url + f'&page={page}')
+    print("2")
+    print(time.time() - start)
+    start = time.time()
+
+    time.sleep(SLEEP_TIME_FOR_LOAD)  # wait for html to be fully loaded
+    print("3")
+    print(time.time() - start)
+    start = time.time()
+
+    soup = BeautifulSoup(driver.page_source, PARSER)
+    print("4")
+    print(time.time() - start)
+    start = time.time()
+
+    print(f"page #{page} search")
+    print(time.time() - start)
+
+    #################check the html file##################
+    # f = open("ozon html.txt", "w", encoding="utf-8")
+    # f.write(soup.prettify())
+    # f.close()
+    ######################################################
+
+    ###################find class name####################
+    class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
+    global FIND_CLASS
+    FIND_CLASS = ' '.join(class_massive)
+    # print(FIND_CLASS)
+    ######################################################
+
+    counter = 1
+    is_found = 0
+
+    for item in soup.find_all("div", {"class": FIND_CLASS}):
+        if item == None:
+            update.message.reply_text(f'По запросу не найдено товаров')
+            driver.quit()
+            return
+        link = item.a.get('href')
+        # print(ozon_code)
+        # print(link)
+        if ozon_code in link:
+            is_found = 1
             break
+        counter += 1
 
-    if is_found != 1:
-        update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*PAGES_TO_FIND} ')
+    if is_found == 1:
+        update.message.reply_text(f"Позиция в поиске: {counter}\nНомер страницы с товаром: {page}")
+
+    else:
+        threads = []
+        for page in range(2, PAGES_TO_FIND+1):
+            threads.append(Thread(target = scan_page, args = (update, driver, page, url, ozon_code)))
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
+
+
+    #update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*PAGES_TO_FIND} ')
 
     driver.quit()
 
@@ -185,7 +227,14 @@ def unknown(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater(token='1655217772:AAHxJPA_M3hdUQkXOnqU1dcuBx6eoJ5k3Ns', use_context = True)
+
+    token_string = str()
+
+    with open('token.txt') as token_file:
+        token_string = token_file.read()
+
+    updater = Updater(token = token_string, use_context = True)
+
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
