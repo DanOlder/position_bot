@@ -25,8 +25,10 @@ def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!',
-        reply_markup=ForceReply(selective=True),
+        fr'Hi {user.mention_markdown_v2()}\!' + 
+        '\nEnter the Command /site, Product code, and the Search query'
+        '\nFor example: "/site 123456789 chocolate Ritter Sport"',
+        #reply_markup=ForceReply(selective=True),
     )
 
 
@@ -69,7 +71,7 @@ def site(update: Update, context: CallbackContext) -> None:
 
     #FIND_CLASS = 'hy5 y5h'
     FIND_CLASS = 'n2i ni3'
-    
+
     PARSER = 'lxml'
     SLEEP_TIME_FOR_LOAD = 0.5
     PAGES_TO_FIND = 10
@@ -113,8 +115,6 @@ def site(update: Update, context: CallbackContext) -> None:
         start = time.time()
 
         
-       
-
         driver.get(url + f'&page={page}')
         print("2")
         print(time.time() - start)
@@ -138,6 +138,16 @@ def site(update: Update, context: CallbackContext) -> None:
         #f.write(soup.prettify())
         #f.close()   
         ######################################################
+
+
+        ###################find class name####################
+        if page == 1:
+            class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
+            FIND_CLASS = ' '.join(class_massive)
+            #print(FIND_CLASS)
+        ######################################################
+
+
 
         for item in soup.find_all("div", {"class": FIND_CLASS}):
             if item == None:
@@ -175,7 +185,7 @@ def unknown(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater(token='', use_context = True)
+    updater = Updater(token='1655217772:AAHxJPA_M3hdUQkXOnqU1dcuBx6eoJ5k3Ns', use_context = True)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
