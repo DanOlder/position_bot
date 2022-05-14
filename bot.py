@@ -11,6 +11,13 @@ from bs4 import BeautifulSoup
 from telegram import Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
+
+PARSER = 'lxml'
+SLEEP_TIME_FOR_LOAD = 0.5
+PAGES_TO_FIND = 10
+FIND_CLASS = None
+
+
 #Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -68,14 +75,10 @@ def site(update: Update, context: CallbackContext) -> None:
         return
 
 
-
-    #FIND_CLASS = 'hy5 y5h'
-    FIND_CLASS = 'n2i ni3'
-
-    PARSER = 'lxml'
-    SLEEP_TIME_FOR_LOAD = 0.5
-    PAGES_TO_FIND = 10
-
+    global PARSER
+    global SLEEP_TIME_FOR_LOAD
+    global PAGES_TO_FIND
+    global FIND_CLASS
 
 
     # make with requests for changing pages
@@ -105,8 +108,8 @@ def site(update: Update, context: CallbackContext) -> None:
     start = time.time()
     #!!!input this line to main and quit webdriver with bot only
     driver = webdriver.Chrome(options=options)
-    print("1")
-    print(time.time() - start)
+    print("\nStarting")
+    #print(time.time() - start)
     start = time.time()
 
     for page in range(1,PAGES_TO_FIND+1):
@@ -116,38 +119,22 @@ def site(update: Update, context: CallbackContext) -> None:
 
         
         driver.get(url + f'&page={page}')
-        print("2")
-        print(time.time() - start)
+        #print("2")
+        #print(time.time() - start)
         start = time.time()
 
         time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
-        print("3")
-        print(time.time() - start)
+        #print("3")
+        #print(time.time() - start)
         start = time.time()
 
         soup = BeautifulSoup(driver.page_source, PARSER)
-        print("4")
-        print(time.time() - start)
+        #print("4")
+        #print(time.time() - start)
         start = time.time()
 
         print(f"page #{page} search")
-        print(time.time() - start)
-
-        #################check the html file##################   
-        #f = open("ozon html.txt", "w", encoding="utf-8")
-        #f.write(soup.prettify())
-        #f.close()   
-        ######################################################
-
-
-        ###################find class name####################
-        if page == 1:
-            class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
-            FIND_CLASS = ' '.join(class_massive)
-            #print(FIND_CLASS)
-        ######################################################
-
-
+        #print(time.time() - start)
 
         for item in soup.find_all("div", {"class": FIND_CLASS}):
             if item == None:
@@ -177,6 +164,28 @@ def site(update: Update, context: CallbackContext) -> None:
     driver.quit()
 
 
+def search_ini():
+
+    global SLEEP_TIME_FOR_LOAD
+    global PARSER
+    global FIND_CLASS
+
+    options = webdriver.ChromeOptions()
+    options.add_argument("headless")
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
+    driver = webdriver.Chrome(options=options)
+
+    driver.get("https://www.ozon.ru/search/?text=%D1%88%D0%BA%D0%BE%D0%BB%D0%B0&from_global=true")
+    time.sleep(SLEEP_TIME_FOR_LOAD)
+    soup = BeautifulSoup(driver.page_source, PARSER)
+
+    class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
+    FIND_CLASS = ' '.join(class_massive)
+    #print(FIND_CLASS)
+    driver.quit()
+
+
 
 def unknown(update: Update, context: CallbackContext) -> None:
     context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
@@ -185,7 +194,15 @@ def unknown(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater(token='1655217772:AAHxJPA_M3hdUQkXOnqU1dcuBx6eoJ5k3Ns', use_context = True)
+
+    with open('token.txt') as token_file:
+        token = token_file.read()
+
+    updater = Updater(token=token, use_context = True)
+
+
+    search_ini()
+
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
