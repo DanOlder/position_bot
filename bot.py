@@ -14,7 +14,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 
 PARSER = 'lxml'
 SLEEP_TIME_FOR_LOAD = 0.5
-PAGES_TO_FIND = 10
+PAGES_TO_FIND = 20
 FIND_CLASS = None
 
 
@@ -34,16 +34,16 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_markdown_v2(
         fr'Добрый день {user.mention_markdown_v2()}\!' + 
         '\nДля получения позиции товара'
-        '\nВведите команду /site, код продукта и поисковый запрос'
-        '\nНапример: "/site 123456789 шоколад Ritter Sport"'
+        '\nВведите команду /find, код продукта и поисковый запрос'
+        '\nНапример: "/find 123456789 шоколад Ritter Sport"'
     )
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
     update.message.reply_text('\nДля получения позиции товара'
-                              '\nВведите команду /site, код продукта и поисковый запрос'
-                              '\nНапример: "/site 123456789 шоколад Ritter Sport"')
+                              '\nВведите команду /find, код продукта и поисковый запрос'
+                              '\nНапример: "/find 123456789 шоколад Ritter Sport"')
 
 
 #for scraping ozon (otherwise Incapsule lock)
@@ -64,7 +64,7 @@ def get_random_ua():
     finally:
         return random_ua    
 
-def site(update: Update, context: CallbackContext) -> None:
+def find(update: Update, context: CallbackContext) -> None:
 
     arg_num = len(context.args)
     if arg_num<2:
@@ -77,6 +77,8 @@ def site(update: Update, context: CallbackContext) -> None:
     global PAGES_TO_FIND
     global FIND_CLASS
 
+
+    update.message.reply_text(f'Поиск...')
 
     # make with requests for changing pages
     url = 'https://www.ozon.ru/search/?text='
@@ -118,9 +120,7 @@ def site(update: Update, context: CallbackContext) -> None:
 
         
         driver.get(url + f'&page={page}')
-
         time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
-
         soup = BeautifulSoup(driver.page_source, PARSER)
 
         print(f"page #{page} search")
@@ -197,7 +197,7 @@ def search_ini():
 
 
 def unknown(update: Update, context: CallbackContext) -> None:
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Введена несуществующая команда")
 
 
 def main() -> None:
@@ -222,7 +222,7 @@ def main() -> None:
 
     # new commands
 
-    dispatcher.add_handler(CommandHandler('site', site))
+    dispatcher.add_handler(CommandHandler('find', find))
 
     dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
