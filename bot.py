@@ -32,21 +32,18 @@ def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!' + 
-        '\nEnter the Command /site, Product code, and the Search query'
-        '\nFor example: "/site 123456789 chocolate Ritter Sport"',
-        #reply_markup=ForceReply(selective=True),
+        fr'Добрый день {user.mention_markdown_v2()}\!' + 
+        '\nДля получения позиции товара'
+        '\nВведите команду /site, код продукта и поисковый запрос'
+        '\nНапример: "/site 123456789 шоколад Ritter Sport"'
     )
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
-
-
-def echo(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
+    update.message.reply_text('\nДля получения позиции товара'
+                              '\nВведите команду /site, код продукта и поисковый запрос'
+                              '\nНапример: "/site 123456789 шоколад Ritter Sport"')
 
 
 #for scraping ozon (otherwise Incapsule lock)
@@ -105,38 +102,45 @@ def site(update: Update, context: CallbackContext) -> None:
     options.add_argument("headless")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    start = time.time()
+    #start = time.time()
     #!!!input this line to main and quit webdriver with bot only
     driver = webdriver.Chrome(options=options)
     print("\nStarting")
+    print(FIND_CLASS)
     #print(time.time() - start)
     start = time.time()
+
+    f = open("Items.txt", "w")
 
     for page in range(1,PAGES_TO_FIND+1):
 
         print(f"page #{page} is loading")
-        start = time.time()
 
         
         driver.get(url + f'&page={page}')
-        #print("2")
-        #print(time.time() - start)
-        start = time.time()
 
         time.sleep(SLEEP_TIME_FOR_LOAD) # wait for html to be fully loaded
-        #print("3")
-        #print(time.time() - start)
-        start = time.time()
 
         soup = BeautifulSoup(driver.page_source, PARSER)
-        #print("4")
-        #print(time.time() - start)
-        start = time.time()
 
         print(f"page #{page} search")
-        #print(time.time() - start)
 
-        for item in soup.find_all("div", {"class": FIND_CLASS}):
+        pageItems = soup.find_all("div", {"class": FIND_CLASS})
+        itemsNum = len(pageItems)
+        if(itemsNum == 0):
+            update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*(PAGES_TO_FIND-1-page)} ')
+            print("\nFinishing")
+            print("Time in process: " + '{:07.3f}'.format(time.time() - start))
+            driver.quit()
+            return
+
+        elif itemsNum<36:
+            print("<36 !!!")
+        #print("Items on Page: " + str(itemsNum))
+
+
+
+        for item in pageItems:
             if item == None:
                 if page == 1:
                     update.message.reply_text(f'По запросу не найдено товаров')
@@ -148,7 +152,9 @@ def site(update: Update, context: CallbackContext) -> None:
                     return
             link = item.a.get('href')
             #print(ozon_code)
+            f.write(link.split('/')[2] + '\n')
             #print(link)
+
             if ozon_code in link:
                 is_found = 1
                 break
@@ -160,6 +166,9 @@ def site(update: Update, context: CallbackContext) -> None:
 
     if is_found != 1:
         update.message.reply_text(f'Товар не найден\nТоваров просмотрено:{36*PAGES_TO_FIND} ')
+
+    print("\nFinishing")
+    print("Time in process: " + '{:07.3f}'.format(time.time() - start))
 
     driver.quit()
 
@@ -182,7 +191,7 @@ def search_ini():
 
     class_massive = soup.body.div.div.div.div.next_sibling.next_sibling.next_sibling.div.next_sibling.div.next_sibling.div.next_sibling.div.div.div.div.get('class')
     FIND_CLASS = ' '.join(class_massive)
-    #print(FIND_CLASS)
+    print(FIND_CLASS)
     driver.quit()
 
 
@@ -211,15 +220,9 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("help", help_command))
 
-    # on non command i.e message - echo the message on Telegram
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
-
     # new commands
 
     dispatcher.add_handler(CommandHandler('site', site))
-
-
-
 
     dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
